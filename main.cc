@@ -58,33 +58,11 @@ struct DebugT;
                          template<typename T> struct name \
                          { typedef typename mpl::pair<Col##name, T> type; };
 
-template<typename ColName, typename ColType>
-struct ColBase
+struct TestTable1
 {
-    typedef typename mpl::pair<ColName, ColType> type;
-};
-
-struct SColumns
-{
-    struct ColPrimaryKey {};
-    template<typename T> struct PrimaryKey
-    { typedef typename mpl::pair<ColPrimaryKey, T> type; };
-
-    struct ColStorage {};
-    template<typename T> struct Storage
-    { typedef typename mpl::pair<ColStorage, T> type; };
-
-    struct ColBaseType {};
-    template<typename T> struct BaseType
-    { typedef typename mpl::pair<ColBaseType, T> type; };
-};
-
-struct TestTable : public SColumns
-{
-    using SColumns::PrimaryKey;
-    using SColumns::Storage;
-    using SColumns::BaseType;
-
+    DEF_COLUMN(PrimaryKey)
+    DEF_COLUMN(Storage)
+    DEF_COLUMN(BaseType)
     typedef mpl::vector<ColPrimaryKey, ColStorage, ColBaseType> header;
 
     // sample table
@@ -384,12 +362,12 @@ class CTypeB2 : public CTypeBBase {};
 void Test()
 {
 #if 0
-    DEBUG_TYPE((TestTable::type));
-    typedef Equal<TestTable::ColPrimaryKey, CTypeA1> TestExpr;
-    typedef mpl::map1<mpl::pair<TestTable::ColPrimaryKey, CTypeA1> > TestParam;
+    DEBUG_TYPE((TestTable1::type));
+    typedef Equal<TestTable1::ColPrimaryKey, CTypeA1> TestExpr;
+    typedef mpl::map1<mpl::pair<TestTable1::ColPrimaryKey, CTypeA1> > TestParam;
     typedef mpl::apply<TestExpr, TestParam> TestApply;
     typedef mpl::eval_if<TestApply::type, mpl::true_, mpl::false_>::type TestIf;
-    typedef mpl::reverse_fold<TestTable::type, mpl::vector0<>, _1>::type TestFold;
+    typedef mpl::reverse_fold<TestTable1::type, mpl::vector0<>, _1>::type TestFold;
     DEBUG_TYPE((TestExpr));
     DEBUG_TYPE((TestApply));
     DEBUG_TYPE((TestIf));
@@ -405,28 +383,28 @@ struct my_wrap
 int main()
 {
 //    Test();
-    typedef typename mpl::cross_join<TestTable::type, TestTable2::type>::type Product;
-//    typedef typename mpl::joint_view<TestTable::type, TestTable2::type> Product;
+    typedef typename mpl::cross_join<TestTable1::type, TestTable2::type>::type Product;
+//    typedef typename mpl::joint_view<TestTable1::type, TestTable2::type> Product;
 
 //    DEBUG_TYPE((Product));
-    std::cout << "Size1: " << mpl::size<TestTable::type>::value << std::endl;
+    std::cout << "Size1: " << mpl::size<TestTable1::type>::value << std::endl;
     std::cout << "Size2: " << mpl::size<TestTable2::type>::value << std::endl;
     std::cout << "Size: " << mpl::size<Product>::value << std::endl;
 
     typedef Select<
-            AddWrapper<Column<TestTable::ColStorage>, shared_ptr>,
-//            MplFunction<Column<TestTable::ColStorage>, mpl::sizeof_>,
-//            From<TestTable>,
-            From<TestTable,
+            AddWrapper<Column<TestTable1::ColStorage>, shared_ptr>,
+//            MplFunction<Column<TestTable1::ColStorage>, mpl::sizeof_>,
+//            From<TestTable1>,
+            From<TestTable1,
 //            From<my_wrap<Product>,
-               Join<TestTable2, Equal<TestTable::ColPrimaryKey, TestTable2::ColTag> >
+               Join<TestTable2, Equal<TestTable1::ColPrimaryKey, TestTable2::ColTag> >
             >
 #if 0
             ,
             Where<
                 Or<
-                    Equal<TestTable::ColPrimaryKey, CTypeA1>,
-                    Equal<TestTable::ColPrimaryKey, CTypeA2>
+                    Equal<TestTable1::ColPrimaryKey, CTypeA1>,
+                    Equal<TestTable1::ColPrimaryKey, CTypeA2>
                 >
            >
 #endif
@@ -435,7 +413,7 @@ int main()
     std::cout << "Size: " << mpl::size<TResultSet>::value << std::endl;
 #if 0
     typedef mpl::back<TResultSet>::type TResultRow;
-    typedef mpl::at<TResultRow, TestTable::ColStorage>::type TResultValue;
+    typedef mpl::at<TResultRow, TestTable1::ColStorage>::type TResultValue;
 
     DEBUG_TYPE((TResultRow));
     DEBUG_TYPE((TResultValue));
