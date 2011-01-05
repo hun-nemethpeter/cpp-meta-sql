@@ -16,6 +16,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include <iostream>
+#include <iomanip>
 
 #include "../common/TypeDebugHelper.h"
 #include "joins.h"
@@ -380,8 +381,115 @@ struct my_wrap
     typedef T type;
 };
 
+template<typename T>
+std::string debug_type_name()
+{
+    std::string ret;
+    char* name;
+    int status;
+    name = abi::__cxa_demangle(typeid(T).name(), 0, 0, &status);
+    ret = name;
+    free(name);
+    return ret;
+};
+
+template<typename T>
+struct print_table
+{
+    typedef std::vector<std::string> TTableHeader;
+    typedef std::vector<std::vector<std::string> > TTable;
+
+    struct print_cols
+    {
+        print_cols(TTable& p_table, TTableHeader& p_tableHeader, unsigned p_rowCount) :
+            m_table(p_table), m_tableHeader(p_tableHeader), m_rowCount(p_rowCount) {}
+        template<typename U>
+        void operator()(U&)
+        {
+            std::string name = debug_type_name<typename mpl::second<U>::type>();
+            m_table[m_rowCount].push_back(name);
+            if (m_rowCount == 0)
+                m_tableHeader.push_back(debug_type_name<typename mpl::first<U>::type>());
+        }
+        TTable& m_table;
+        TTableHeader& m_tableHeader;
+        unsigned m_rowCount;
+    };
+
+    struct print_rows
+    {
+        print_rows(TTable& p_table, TTableHeader& p_tableHeader) :
+            m_table(p_table), m_tableHeader(p_tableHeader), m_rowCount(0) {}
+        template<typename U>
+        void operator()(U&)
+        {
+            mpl::for_each<U>(print_cols(m_table, m_tableHeader, m_rowCount));
+            m_rowCount++;
+        }
+        TTable& m_table;
+        TTableHeader& m_tableHeader;
+        unsigned m_rowCount;
+    };
+
+    void PrintHeaderLine()
+    {
+        for (unsigned i = 0; i < m_tableHeader.size(); ++i)
+        {
+            if (i == 0)
+                std::cout << "+";
+            std::cout << "-";
+            for (unsigned j = 0; j < m_tableHeader[i].size(); ++j)
+                std::cout << "-";
+            std::cout << "-+";
+        }
+        std::cout << "\n";
+    }
+    void PrintHeader()
+    {
+        for (unsigned i = 0; i < m_tableHeader.size(); ++i)
+        {
+            if (i == 0)
+                std::cout << "|";
+            std::cout << " ";
+            std::cout << m_tableHeader[i];
+            std::cout << " |";
+        }
+        std::cout << "\n";
+    }
+    void print()
+    {
+        PrintHeaderLine();
+        PrintHeader();
+        PrintHeaderLine();
+        for (unsigned i = 0; i < m_table.size(); ++i)
+        {
+            for (unsigned j = 0; j < m_table[0].size(); ++j)
+            {
+                if (j == 0)
+                    std::cout << "|";
+                std::cout << " ";
+                unsigned width = m_tableHeader[j].size();
+                std::cout << std::left << std::setw(width) << m_table[i][j];
+                std::cout << " |";
+            }
+            std::cout << "\n";
+        }
+        PrintHeaderLine();
+    }
+
+    print_table() : m_table(mpl::size<T>::type::value)
+    {
+        mpl::for_each<T>(print_rows(m_table, m_tableHeader));
+        print();
+    }
+    TTable m_table;
+    TTableHeader m_tableHeader;
+};
+
 int main()
 {
+    print_table<TestTable1::type>();
+    print_table<TestTable2::type>();
 //    Test();
     typedef typename mpl::cross_join<TestTable1::type, TestTable2::type>::type Product;
 //    typedef typename mpl::joint_view<TestTable1::type, TestTable2::type> Product;
@@ -410,6 +518,7 @@ int main()
 #endif
     >::type TResultSet;
     DEBUG_TYPE((TResultSet));
+    print_table<TResultSet>();
     std::cout << "Size: " << mpl::size<TResultSet>::value << std::endl;
 #if 0
     typedef mpl::back<TResultSet>::type TResultRow;
