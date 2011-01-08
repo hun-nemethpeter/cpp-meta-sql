@@ -198,8 +198,8 @@ struct Columns
     typedef typename
     mpl::if_<
         typename is_same<t_Column2, mpl_::na>::type,
-         mpl::vector1<Column<t_Column1> >,
-         mpl::vector2<Column<t_Column1>, Column<t_Column2> >
+         mpl::vector1<t_Column1>,
+         mpl::vector2<t_Column1, t_Column2>
     >::type type;
 };
 
@@ -402,7 +402,7 @@ struct Select
         typedef typename mpl::apply<column1, TCol1Value>::type TCol1Res;
         typedef typename mpl::eval_if<
               mpl::has_key<Row, column1Name>,
-              mpl::push_front<Res, mpl::map1<mpl::pair<column1Name, TCol1Value> > >,
+              mpl::push_front<Res, mpl::map1<mpl::pair<column1Name, TCol1Res> > >,
 	      Res
 	>::type type;
     };
@@ -433,9 +433,9 @@ struct Select
 
 void TestQuery1()
 {
-#if 0
+#if 1
     typedef Select<
-            MplFunction<Column<TestTable1::ColStorage>, mpl::sizeof_>,
+            Columns<MplFunction<Column<TestTable1::ColStorage>, mpl::sizeof_> >,
             From<TestTable1,
                Join<TestTable2, Equal<TestTable1::ColPrimaryKey, TestTable2::ColTag> >
             >
@@ -448,7 +448,7 @@ void TestQuery1()
 void TestQuery2()
 {
     typedef Select<
-            Columns<TestTable1::ColStorage>,
+            Columns<AddWrapper<Column<TestTable1::ColStorage>, shared_ptr> >,
 //            Columns<TestTable1::ColStorage, TestTable1::ColPrimaryKey>,
 //            AddWrapper<Column<TestTable1::ColStorage>, shared_ptr>,
 //            AddWrapper2<Column<TestTable1::ColStorage>, Column<TestTable1::ColPrimaryKey>, std::pair>,
