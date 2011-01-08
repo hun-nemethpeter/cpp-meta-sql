@@ -141,6 +141,23 @@ struct AddWrapper
     };
 };
 
+template <typename t_Column1, typename t_Column2, template<typename, typename> class t_Wrapper>
+struct AddWrapper2
+{
+    BOOST_MPL_ASSERT((is_same<typename t_Column1::concept, ColumnConcept>));
+    BOOST_MPL_ASSERT((is_same<typename t_Column2::concept, ColumnConcept>));
+    typedef ColumnConcept concept;
+    typedef typename t_Column1::type type;
+
+    template<class ColValue>
+    struct apply
+    {
+        typedef typename t_Column1::template apply<ColValue>::type memberValue1;
+        typedef typename t_Column2::template apply<ColValue>::type memberValue2;
+        typedef t_Wrapper<memberValue1, memberValue2> type;
+    };
+};
+
 template <typename t_Column, template<typename> class t_MplFunction>
 struct MplFunction
 {
