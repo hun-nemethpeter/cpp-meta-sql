@@ -151,13 +151,18 @@ struct AddWrapper2
     BOOST_MPL_ASSERT((is_same<typename t_Column2::concept, ColumnConcept>));
     typedef ColumnConcept concept;
     typedef typename t_Column1::type type;
+    typedef typename t_Column1::type col1;
+    typedef typename t_Column2::type col2;
 
-    template<class ColValue>
+    template<class Row>
     struct apply
     {
-        typedef typename mpl::apply<t_Column1, ColValue>::type memberValue1;
-        typedef typename mpl::apply<t_Column2, ColValue>::type memberValue2;
-        typedef t_Wrapper<memberValue1, memberValue2> type;
+        BOOST_MPL_ASSERT((typename mpl::has_key<Row, col1>::type));
+        BOOST_MPL_ASSERT((typename mpl::has_key<Row, col2>::type));
+        typedef typename mpl::at<Row, col1>::type TValue1;
+        typedef typename mpl::at<Row, col2>::type TValue2;
+
+        typedef t_Wrapper<TValue1, TValue2> type;
     };
 };
 
@@ -167,11 +172,14 @@ struct MplFunction
     BOOST_MPL_ASSERT((is_same<typename t_Column::concept, ColumnConcept>));
     typedef ColumnConcept concept;
     typedef typename t_Column::type type;
+    typedef typename t_Column::type col1;
 
-    template<class ColValue>
+    template<class Row>
     struct apply
     {
-        typedef typename t_Column::template apply<ColValue>::type memberValue;
+        BOOST_MPL_ASSERT((typename mpl::has_key<Row, col1>::type));
+        typedef typename mpl::at<Row, col1>::type TValue1;
+        typedef typename t_Column::template apply<TValue1>::type memberValue;
         typedef typename t_MplFunction<memberValue>::type type;
     };
 };
@@ -398,8 +406,7 @@ struct Select
     {
         typedef typename mpl::at_c<columns, 0>::type column1;
         typedef typename column1::type column1Name;
-        typedef typename mpl::at<Row, column1Name>::type TCol1Value;
-        typedef typename mpl::apply<column1, TCol1Value>::type TCol1Res;
+        typedef typename mpl::apply<column1, Row>::type TCol1Res;
         typedef typename mpl::eval_if<
               mpl::has_key<Row, column1Name>,
               mpl::push_front<Res, mpl::map1<mpl::pair<column1Name, TCol1Res> > >,
@@ -448,10 +455,10 @@ void TestQuery1()
 void TestQuery2()
 {
     typedef Select<
-            Columns<AddWrapper<Column<TestTable1::ColStorage>, shared_ptr> >,
+//            Columns<AddWrapper<Column<TestTable1::ColStorage>, shared_ptr> >,
 //            Columns<TestTable1::ColStorage, TestTable1::ColPrimaryKey>,
 //            AddWrapper<Column<TestTable1::ColStorage>, shared_ptr>,
-//            AddWrapper2<Column<TestTable1::ColStorage>, Column<TestTable1::ColPrimaryKey>, std::pair>,
+            Columns<AddWrapper2<Column<TestTable1::ColStorage>, Column<TestTable1::ColPrimaryKey>, std::pair> >,
 //            From<TestTable1>,
             From<TestTable1,
 //            From<mpl::identity<Product>,
