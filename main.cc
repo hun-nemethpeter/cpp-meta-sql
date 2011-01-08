@@ -1,7 +1,9 @@
 #include <boost/mpl/and.hpp>
 #include <boost/mpl/at.hpp>
 #include <boost/mpl/back.hpp>
+#include <boost/mpl/equal_to.hpp>
 #include <boost/mpl/if.hpp>
+#include <boost/mpl/identity.hpp>
 #include <boost/mpl/map.hpp>
 #include <boost/mpl/or.hpp>
 #include <boost/mpl/print.hpp>
@@ -12,6 +14,7 @@
 //#include <boost/mpl/string.hpp>
 #include <boost/mpl/vector.hpp>
 
+#include <boost/array.hpp>
 #include <boost/type_traits.hpp>
 #include <boost/shared_ptr.hpp>
 
@@ -152,8 +155,8 @@ struct AddWrapper2
     template<class ColValue>
     struct apply
     {
-        typedef typename t_Column1::template apply<ColValue>::type memberValue1;
-        typedef typename t_Column2::template apply<ColValue>::type memberValue2;
+        typedef typename mpl::apply<t_Column1, ColValue>::type memberValue1;
+        typedef typename mpl::apply<t_Column2, ColValue>::type memberValue2;
         typedef t_Wrapper<memberValue1, memberValue2> type;
     };
 };
@@ -185,6 +188,19 @@ struct Column
     {
         typedef ColValue type;
     };
+};
+
+template<typename t_Column1, typename t_Column2 = mpl_::na>
+struct Columns
+{
+//    typedef mpl::string<> name;
+    typedef ColumnConcept concept;
+    typedef typename
+    mpl::if_<
+        typename is_same<t_Column2, mpl_::na>::type,
+         mpl::vector1<Column<t_Column1> >,
+         mpl::vector2<Column<t_Column1>, Column<t_Column2> >
+    >::type type;
 };
 
 // http://stackoverflow.com/questions/3171276/select-multiple-tables-when-one-table-is-empty-in-mysql
@@ -354,31 +370,62 @@ struct Select
     typedef ColumnConcept concept;
 
 //    typedef mpl::string<'S','E','L','E','C','T'> name;
+    typedef typename t_Column::type columns;
     typedef typename t_From::type from;
     typedef typename t_Where::type where;
-    typedef typename t_Column::type column;
 
-    template<class Res, class Map>
-    struct SIfMapContainsItemThenStoreInRes
+    template<class Res, class Row>
+    struct SIfMapContainsItemThenStoreInRes2
     {
-//        DebugT<Map> debug;
-        typedef typename mpl::at<Map, column>::type TRes;
-        typedef typename mpl::apply<t_Column, TRes>::type TRes2;
+//        DebugT<Row> debug;
+        typedef typename mpl::at_c<columns, 0>::type column1;
+        typedef typename mpl::at_c<columns, 1>::type column2;
+        typedef typename column1::type column1Name;
+        typedef typename column2::type column2Name;
+        typedef typename mpl::at<Row, column1Name>::type TCol1Value;
+        typedef typename mpl::apply<column1, TCol1Value>::type TCol1Res;
+        typedef typename mpl::at<Row, column2Name>::type TCol2Value;
+        typedef typename mpl::apply<column2, TCol2Value>::type TCol2Res;
         typedef typename mpl::eval_if<
-              mpl::has_key<Map, column>,
-              mpl::push_front<Res, mpl::map1<mpl::pair<column, TRes2> > >,
+              mpl::and_<mpl::has_key<Row, column1Name>, mpl::has_key<Row, column2Name> >,
+              mpl::push_front<Res, mpl::map2<mpl::pair<column1Name, TCol1Res>, mpl::pair<column2Name, TCol2Res> > >,
 	      Res
 	>::type type;
     };
+
+    template<class Res, class Row>
+    struct SIfMapContainsItemThenStoreInRes
+    {
+        typedef typename mpl::at_c<columns, 0>::type column1;
+        typedef typename column1::type column1Name;
+        typedef typename mpl::at<Row, column1Name>::type TCol1Value;
+        typedef typename mpl::apply<column1, TCol1Value>::type TCol1Res;
+        typedef typename mpl::eval_if<
+              mpl::has_key<Row, column1Name>,
+              mpl::push_front<Res, mpl::map1<mpl::pair<column1Name, TCol1Value> > >,
+	      Res
+	>::type type;
+    };
+
+    template<class Res, class Row>
+    struct SSwitch
+    {
+//        DebugT<columns> deb;
+        typedef typename
+        mpl::eval_if<
+            mpl::equal_to<mpl::size<columns>, mpl::int_<1> >,
+            SIfMapContainsItemThenStoreInRes<Res, Row>,
+            SIfMapContainsItemThenStoreInRes2<Res, Row>
+       >::type type;
+    };
+
 
     typedef typename mpl::reverse_fold<
         from,             // from table
         mpl::vector0<>,   // result set
         mpl::eval_if<
-//            typename where::template apply<_2>, // OK
-//            mpl::apply<where, _2>, // WRONG apply with lambda
             mpl::apply1<where, _2>,
-            SIfMapContainsItemThenStoreInRes<_1, _2>,
+            SSwitch<_1, _2>,
             _1
         >
     >::type type;
@@ -386,6 +433,7 @@ struct Select
 
 void TestQuery1()
 {
+#if 0
     typedef Select<
             MplFunction<Column<TestTable1::ColStorage>, mpl::sizeof_>,
             From<TestTable1,
@@ -394,15 +442,19 @@ void TestQuery1()
     > TResultSet;
     DEBUG_TYPE((TResultSet));
     print_table<TResultSet::type>();
+#endif
 }
 
 void TestQuery2()
 {
     typedef Select<
-            AddWrapper<Column<TestTable1::ColStorage>, shared_ptr>,
+            Columns<TestTable1::ColStorage>,
+//            Columns<TestTable1::ColStorage, TestTable1::ColPrimaryKey>,
+//            AddWrapper<Column<TestTable1::ColStorage>, shared_ptr>,
+//            AddWrapper2<Column<TestTable1::ColStorage>, Column<TestTable1::ColPrimaryKey>, std::pair>,
 //            From<TestTable1>,
             From<TestTable1,
-//            From<my_wrap<Product>,
+//            From<mpl::identity<Product>,
                Join<TestTable2, Equal<TestTable1::ColPrimaryKey, TestTable2::ColTag> >
             >,
             Where<
