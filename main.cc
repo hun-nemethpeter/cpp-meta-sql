@@ -201,7 +201,7 @@ struct Column
     template<class Row>
     struct apply
     {
-        BOOST_MPL_ASSERT((typename mpl::has_key<Row, t_Column>::type));
+//        BOOST_MPL_ASSERT((typename mpl::has_key<Row, t_Column>::type));
 
         typedef typename mpl::at<Row, t_Column>::type type;
     };
@@ -394,7 +394,7 @@ struct Select
     template<class Res, class Row>
     struct SIfMapContainsItemThenStoreInRes2
     {
-//        DebugT<Row> debug;
+        DebugT<Row> debug;
         typedef typename mpl::at_c<columns, 0>::type column1;
         typedef typename mpl::at_c<columns, 1>::type column2;
         typedef typename column1::type column1Name;
@@ -415,6 +415,7 @@ struct Select
     {
         typedef typename mpl::at_c<columns, 0>::type column1;
         typedef typename column1::type column1Name;
+//        DebugT<column1> debug;
         typedef typename mpl::apply<column1, Row>::type TCol1Res;
         typedef typename mpl::eval_if<
               mpl::has_key<Row, column1Name>,
@@ -449,7 +450,7 @@ struct Select
 
 void TestQuery1()
 {
-#if 1
+#if 0
     typedef Select<
             Columns<MplFunction<Column<TestTable1::ColStorage>, mpl::sizeof_> >,
             From<TestTable1,
@@ -463,6 +464,7 @@ void TestQuery1()
 
 void TestQuery2()
 {
+#if 0
     typedef Select<
 //            Columns<AddWrapper<AddWrapper<Column<TestTable1::ColStorage>, shared_ptr>, shared_ptr> >,
 //            Columns<TestTable1::ColStorage, TestTable1::ColPrimaryKey>,
@@ -482,6 +484,35 @@ void TestQuery2()
     > TResultSet;
     DEBUG_TYPE((TResultSet));
     print_table<TResultSet::type>();
+#endif
+}
+
+// Select<
+//    Columns<TestTable1::ColStorage, TestTable1::ColPrimaryKey>,
+//    From<TestTable1, mpl_::na>,
+//    Where<
+//       Or<
+//          Equal<TestTable1::ColPrimaryKey, CTypeA1>,
+//          Equal<TestTable1::ColPrimaryKey, CTypeA2>
+//       >
+//    >
+// >
+void TestQuery3()
+{
+#if 1
+    typedef Select<
+            Columns<Column<TestTable1::ColStorage>, Column<TestTable1::ColPrimaryKey> >,
+            From<TestTable1>,
+            Where<
+                Or<
+                    Equal<TestTable1::ColPrimaryKey, CTypeA1>,
+                    Equal<TestTable1::ColPrimaryKey, CTypeA2>
+                >
+           >
+    > TResultSet;
+    DEBUG_TYPE((TResultSet));
+    print_table<TResultSet::type>();
+#endif
 }
 
 int main()
@@ -490,4 +521,5 @@ int main()
     print_table<TestTable2::type>();
     TestQuery1();
     TestQuery2();
+    TestQuery3();
 }
