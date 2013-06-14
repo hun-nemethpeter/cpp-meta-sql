@@ -1,7 +1,7 @@
 EXE_FILE=meta_sql
 
 CXX=g++
-CXXFLAGS_COMMON = -g -Wall -ftemplate-depth-20000
+CXXFLAGS_COMMON = -g -Wall -std=c++11 -ftemplate-depth-20000
 CXXFLAGS_INCLUDES = -I. -include pre.h
 CXXFLAGS = $(CXXFLAGS_COMMON) $(CXXFLAGS_INCLUDES)
 #LDFLAGS = -lboost_regex -lboost_date_time
