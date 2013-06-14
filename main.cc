@@ -21,7 +21,7 @@
 #include <iostream>
 #include <iomanip>
 
-#include "../common/TypeDebugHelper.h"
+#include "TypeDebugHelper.h"
 #include "joins.h"
 #include "print_table.h"
 
