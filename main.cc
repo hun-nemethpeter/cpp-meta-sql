@@ -118,7 +118,7 @@ struct TestTable2
 template<typename t_Column>
 struct Max
 {
-    BOOST_MPL_ASSERT((is_same<typename t_Column::concept, ColumnConcept>));
+    static_assert(is_same<typename t_Column::concept, ColumnConcept>::type, "Max<T> is used where T is NOT a column concept");
     typedef ColumnConcept concept;
     typedef typename t_Column::type type;
 
@@ -201,7 +201,7 @@ struct Column
     template<class Row>
     struct apply
     {
-//        BOOST_MPL_ASSERT((typename mpl::has_key<Row, t_Column>::type));
+        BOOST_MPL_ASSERT((typename mpl::has_key<Row, t_Column>::type));
 
         typedef typename mpl::at<Row, t_Column>::type type;
     };
@@ -394,7 +394,7 @@ struct Select
     template<class Res, class Row>
     struct SIfMapContainsItemThenStoreInRes2
     {
-        DebugT<Row> debug;
+//        DebugT<Row> debug;
         typedef typename mpl::at_c<columns, 0>::type column1;
         typedef typename mpl::at_c<columns, 1>::type column2;
         typedef typename column1::type column1Name;
@@ -415,7 +415,6 @@ struct Select
     {
         typedef typename mpl::at_c<columns, 0>::type column1;
         typedef typename column1::type column1Name;
-//        DebugT<column1> debug;
         typedef typename mpl::apply<column1, Row>::type TCol1Res;
         typedef typename mpl::eval_if<
               mpl::has_key<Row, column1Name>,
@@ -450,7 +449,7 @@ struct Select
 
 void TestQuery1()
 {
-#if 0
+#if 1
     typedef Select<
             Columns<MplFunction<Column<TestTable1::ColStorage>, mpl::sizeof_> >,
             From<TestTable1,
@@ -464,7 +463,6 @@ void TestQuery1()
 
 void TestQuery2()
 {
-#if 0
     typedef Select<
 //            Columns<AddWrapper<AddWrapper<Column<TestTable1::ColStorage>, shared_ptr>, shared_ptr> >,
 //            Columns<TestTable1::ColStorage, TestTable1::ColPrimaryKey>,
@@ -484,35 +482,31 @@ void TestQuery2()
     > TResultSet;
     DEBUG_TYPE((TResultSet));
     print_table<TResultSet::type>();
-#endif
 }
 
-// Select<
-//    Columns<TestTable1::ColStorage, TestTable1::ColPrimaryKey>,
-//    From<TestTable1, mpl_::na>,
-//    Where<
-//       Or<
-//          Equal<TestTable1::ColPrimaryKey, CTypeA1>,
-//          Equal<TestTable1::ColPrimaryKey, CTypeA2>
-//       >
-//    >
-// >
 void TestQuery3()
 {
-#if 1
     typedef Select<
-            Columns<Column<TestTable1::ColStorage>, Column<TestTable1::ColPrimaryKey> >,
+            Columns<Column<TestTable1::ColStorage> >,
             From<TestTable1>,
             Where<
-                Or<
-                    Equal<TestTable1::ColPrimaryKey, CTypeA1>,
-                    Equal<TestTable1::ColPrimaryKey, CTypeA2>
-                >
+                Equal<TestTable1::ColPrimaryKey, CTypeA1>
            >
     > TResultSet;
     DEBUG_TYPE((TResultSet));
     print_table<TResultSet::type>();
-#endif
+
+    // fetch one row
+    typedef mpl::back<TResultSet::type>::type TResultRow;
+
+    // get column ColStorage which is an int, TRes will be an int
+    typedef mpl::at<TResultRow, TestTable1::ColStorage>::type TRes;
+
+    // use the "int" type
+    TRes testInteger = 9;
+
+    // prints test value
+    std::cout << "testInteger:" << testInteger << std::endl;
 }
 
 int main()
